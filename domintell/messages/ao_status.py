@@ -4,6 +4,7 @@ AO status (to be inherited)
 """
 import json
 import domintell
+import logging
 
 AO_COMMAND_CODE = "AO"
 
@@ -19,6 +20,7 @@ class GenericAOStatusMessage(domintell.Message):
         self.serialNumber = None
         self.dataType = None
         self.outputs = {}
+        self.logger = logging.getLogger('domintell')
         for i in range(0, self.outputCount):
             self.outputs[i] = 0
 
@@ -30,7 +32,10 @@ class GenericAOStatusMessage(domintell.Message):
         self.dataType = dataType
 
         for output in range(0, self.outputCount):
-            self.outputs[output] = int(dataString[output * 2: (output * 2) + 2].strip(), 16)
+            try:
+                self.outputs[output] = int(dataString[output * 2: (output * 2) + 2].strip(), 16)
+            except ValueError:
+                self.logger.debug("Unable to populate data string [%s]", dataString)
 
     def to_json(self):
         """
