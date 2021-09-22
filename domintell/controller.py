@@ -116,6 +116,7 @@ class Controller(object):
 
     def login(self, password):
         message = domintell.LoginRequest(password)
+        self.connection.set_login_message(message)
         self.send(message)
          
     def new_message(self, message):

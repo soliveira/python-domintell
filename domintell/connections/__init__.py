@@ -125,6 +125,8 @@ class UDPConnection(domintell.DomintellConnection):
         self._device = device
         self.controller = controller
         self.ping_interval = ping_interval
+        self.got_ping_message = False
+        self.login_message = None
 
         # get the address from a <host>:<port> format
         addr = device.split(':')
@@ -154,6 +156,9 @@ class UDPConnection(domintell.DomintellConnection):
                                             "domintell-ping-writer", (), {})
         self._ping_process.daemon = True
 
+    def set_login_message(self, message):
+        self.logger.debug("setting login message [%s]", message)
+        self.login_message = message
 
     def stop(self):
         """Close UDP."""
@@ -180,6 +185,7 @@ class UDPConnection(domintell.DomintellConnection):
         while True:
             data = self._socket.recv(1024)
             self.feed_parser(data)
+            self.got_ping_message = True
 
     def write_daemon(self):
         """Write thread."""
@@ -199,8 +205,14 @@ class UDPConnection(domintell.DomintellConnection):
         """Put ping message into write thread every 60 sec"""
         s = self.ping_interval
         while True:
+            if not self.got_ping_message:
+                if self.login_message is None :
+                    raise ValueError("Login Message not set")
+                self.logger.debug("Session lost. Resending login message")
+                self.send(self.login_message)
             p = domintell.messages.Ping()
             self.send(p)
+            self.got_ping_message = False
             time.sleep(s)
 
     def start_ping(self, interval=-1):
