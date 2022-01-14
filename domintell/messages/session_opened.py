@@ -11,12 +11,9 @@ class SessionOpenedMessage(domintell.Message):
     """
 
     def __init__(self, moduleType=None, data=None):
-
         domintell.Message.__init__(self)
-        self._message = ''
-        if data[0:24] == 'INFO:Session opened:INFO':
-            self.moduleType = 'SESSION_OPENED'
-            self._message = data
+        self.moduleType = 'SESSION_OPENED'
+        self._message = data
     
     def populate(self, serialNumber, dataType, dataString):
         pass

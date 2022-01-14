@@ -1,1 +1,1 @@
-from config.credentials import host
+from credentials import host

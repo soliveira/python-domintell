@@ -8,6 +8,8 @@ import logging
 import time
 import json
 import domintell
+from domintell.connections import WSSConnection
+from domintell.messages.login_request import LoginRequest
 from domintell.utils import ModuleJSONEncoder
  
 MODULE_CATEGORIES = {
@@ -16,42 +18,18 @@ MODULE_CATEGORIES = {
     'sensor': ['VMB6IN', 'VMB7IN']
 }
 
-class DomintellConnection(object):
-    """
-    Generic Domintell connection
-    """
-
-    controller = None
-
-    def set_controller(self, controller):
-        """
-        :return: None
-        """
-        assert isinstance(controller, Controller)
-        self.controller = controller
-
-    def send(self, message, callback=None):
-        """
-        :return: None
-        """
-        raise NotImplementedError
-
-
 class Controller(object):
     """
     Domintell Bus connection controller
     """
 
-    def __init__(self, port):
+    def __init__(self, address):
         self.logger = logging.getLogger('domintell')
         self.parser = domintell.DomintellParser(self)
         self.__subscribers = []
         self.__scan_callback = None
         self._modules = {}
-        if ":" in port:
-            self.connection = domintell.UDPConnection(port, self)
-        else:
-            self.connection = domintell.RS232Connection(port, self)
+        self.connection = WSSConnection(address, self)
 
     def feed_parser(self, data):
         """
@@ -59,7 +37,6 @@ class Controller(object):
 
         :return: None
         """
-        assert isinstance(data, bytes)
         self.parser.feed(data)
 
     def subscribe(self, subscriber):
@@ -114,9 +91,9 @@ class Controller(object):
         message = domintell.AppInfoRequest()
         self.send(message)
 
-    def login(self, password):
-        message = domintell.LoginRequest(password)
-        self.connection.set_login_message(message)
+    def login(self, username, password):
+        self._password = password
+        message = domintell.LoginRequestSaltCommand(username)
         self.send(message)
          
     def new_message(self, message):
@@ -140,6 +117,9 @@ class Controller(object):
                     m = self._modules
                     # move encoding into config , encoding='iso8859_13'
                     json.dump(m, f, cls=ModuleJSONEncoder)
+        elif isinstance(message, domintell.LoginRequestSaltMessage):
+            logging.info("Request Salt message received")
+            self.send(LoginRequest(message.username, self._password, message.salt, message.nonce))
         
         # forward message to listeners
         for subscriber in self.__subscribers:

@@ -11,12 +11,9 @@ class SessionTimeoutMessage(domintell.Message):
     """
 
     def __init__(self, moduleType=None, data=None):
-
         domintell.Message.__init__(self)
-        self._message = ''
-        if data[0:25] == 'INFO:Session timeout:INFO':
-            self.moduleType = 'SESSION_TIMEOUT'
-            self._message = data
+        self.moduleType = 'SESSION_TIMEOUT'
+        self._message = data
     
     def populate(self, serialNumber, dataType, dataString):
         pass

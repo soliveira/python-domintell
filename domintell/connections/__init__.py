@@ -5,15 +5,36 @@ Port for Domintell
 :author: Zilvinas Binisevicius <zilvinas@binis.me>
 
 """
+import socket
 import time
 import threading
 import logging
 from queue import Queue
-import domintell
-import domintell.messages
+import ssl
 import serial
 import serial.threaded
-import socket
+import websocket
+import domintell
+  
+class DomintellConnection(object):
+    """
+    Generic Domintell connection
+    """
+
+    controller = None
+
+    def set_controller(self, controller):
+        """
+        :return: None
+        """
+        assert isinstance(controller, Controller)
+        self.controller = controller
+
+    def send(self, message, callback=None):
+        """
+        :return: None
+        """
+        raise NotImplementedError
 
 class Protocol(serial.threaded.Protocol):
     """Serial protocol."""
@@ -31,109 +52,27 @@ class DomintellException(Exception):
 
     def __str__(self):
         return repr(self.value)
+  
 
 
-class RS232Connection(domintell.DomintellConnection):
+class WSSConnection(DomintellConnection):
     """
-        Wrapper for SerialPort connection configuration
-        !! NOT TESTED !!
+        Wrapper for Secure Web Socket connection configuration 
     """
-
-    BAUD_RATE = 38400
-
-    BYTE_SIZE = serial.EIGHTBITS
-
-    PARITY = serial.PARITY_NONE
- 
-    STOPBITS = serial.STOPBITS_ONE
-
-    XONXOFF = 0
-
-    RTSCTS = 1
-
-    SLEEP_TIME = 60 / 1000
-
-    def __init__(self, device, controller=None):
-        domintell.DomintellConnection.__init__(self)
-        self.logger = logging.getLogger('domintell')
-        self._device = device
-        self.controller = controller
-        try:
-            self.serial = serial.Serial(port=device,
-                                        baudrate=self.BAUD_RATE,
-                                        bytesize=self.BYTE_SIZE,
-                                        parity=self.PARITY,
-                                        stopbits=self.STOPBITS,
-                                        xonxoff=self.XONXOFF,
-                                        rtscts=self.RTSCTS)
-        except serial.serialutil.SerialException:
-            self.logger.error("Could not open serial port, \
-                              no messages are read or written to the bus")
-            raise DomintellException("Could not open serial port")
-        self._reader = serial.threaded.ReaderThread(self.serial, Protocol)
-        self._reader.start()
-        self._reader.protocol.parser = self.feed_parser
-        self._reader.connect()
-        self._write_queue = Queue()
-        self._write_process = threading.Thread(None, self.write_daemon,
-                                               "write_packets_process", (), {})
-        self._write_process.daemon = True
-        self._write_process.start()
-
-    def stop(self):
-        """Close serial port."""
-        self.logger.warning("Stop executed")
-        try:
-            self._reader.close()
-        except serial.serialutil.SerialException:
-            self.logger.error("Error while closing device")
-            raise DomintellException("Error while closing device")
-        time.sleep(1)
-
-    def feed_parser(self, data):
-        """Parse received message."""
-        assert isinstance(data, bytes)
-        self.controller.feed_parser(data)
-
-    def send(self, message, callback=None):
-        """Add message to write queue."""
-        assert isinstance(message, domintell.Message)
-        self._write_queue.put_nowait((message, callback))
-
-    def write_daemon(self):
-        """Write thread."""
-        while True:
-            (message, callback) = self._write_queue.get(block=True)
-            self.logger.info("Sending message on RS232 bus: %s", str(message))
-            self.logger.debug("Sending binary message:  %s", str(message.to_binary()))
-            self._reader.write(message.to_binary())
-            time.sleep(self.SLEEP_TIME)
-            if callback:
-                callback()
-
-
-class UDPConnection(domintell.DomintellConnection):
-    """
-    Wrapper for UDP connection configuration
-    :author: Maikel Punie <maikel.punie@gmail.com>
-    """
-    SLEEP_TIME = 60 / 1000
-
     def __init__(self, device, controller=None, ping_interval=0):
-        domintell.DomintellConnection.__init__(self)
+        DomintellConnection.__init__(self)
         self.logger = logging.getLogger('domintell')
         self._device = device
         self.controller = controller
         self.ping_interval = ping_interval
         self.got_ping_message = False
-        self.login_message = None
+        self.login_message = "LOGINPSW@"
 
-        # get the address from a <host>:<port> format
-        addr = device.split(':')
-        self._addr = (addr[0], int(addr[1]))
         try:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-            # self._socket.connect( addr )
+            websocket.enableTrace(True)
+            self._socket =websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+            self._socket.connect(device)
+                        
         except:
             self.logger.error("Could not open socket, \
                               no messages are read or written to the bus")
@@ -156,12 +95,8 @@ class UDPConnection(domintell.DomintellConnection):
                                             "domintell-ping-writer", (), {})
         self._ping_process.daemon = True
 
-    def set_login_message(self, message):
-        self.logger.debug("setting login message [%s]", message)
-        self.login_message = message
-
     def stop(self):
-        """Close UDP."""
+        """Close socket."""
         self.logger.warning("Stop executed")
         try:
             self._socket.close()
@@ -170,9 +105,11 @@ class UDPConnection(domintell.DomintellConnection):
             raise DomintellException("Error while closing socket")
         time.sleep(1)
 
+    def login(self):
+        self._socket.send(self.login_message)
+
     def feed_parser(self, data):
         """Parse received message."""
-        assert isinstance(data, bytes)
         self.controller.feed_parser(data)
 
     def send(self, message, callback=None):
@@ -181,23 +118,27 @@ class UDPConnection(domintell.DomintellConnection):
         self._write_queue.put_nowait((message, callback))
 
     def read_daemon(self):
-        """Read thread."""
-        while True:
-            data = self._socket.recv(1024)
+       while True:
+            data = self._socket.recv()
             self.feed_parser(data)
-            self.got_ping_message = True
+
+    def on_error(self, error):
+        self.logger.error(error)
+
+    def on_close(self, socket, close_status_code, close_msg):
+        self.logger.info("WS closed:" + close_msg )
 
     def write_daemon(self):
         """Write thread."""
         while True:
             (message, callback) = self._write_queue.get(block=True)
-            self.logger.info("Sending message to UDP: %s", str(message))
+            self.logger.info("Sending message to socket: %s", str(message))
             self.logger.debug("Sending controll message:  %s", message.to_string())
             if message.is_binary():
-                self._socket.sendto(message.to_string(), self._addr)
+                self._socket.send(message.to_string())
             else:
-                self._socket.sendto(bytes(message.to_string(),'ascii'), self._addr)
-            time.sleep(self.SLEEP_TIME)
+                self._socket.send(bytes(message.to_string(),'ascii'))
+            time.sleep(1)
             if callback:
                 callback()
     
@@ -210,15 +151,15 @@ class UDPConnection(domintell.DomintellConnection):
                     raise ValueError("Login Message not set")
                 self.logger.debug("Session lost. Resending login message")
                 self.send(self.login_message)
-            p = domintell.messages.Ping()
-            self.send(p)
+            ping_message = domintell.messages.Ping()
+            self.send(ping_message)
             self.got_ping_message = False
             time.sleep(s)
 
     def start_ping(self, interval=-1):
         """
         Start sending PING message to DETH02 every minute.
-        DETH02 will end Login 'session' if no messages received 
+        DETH02 will end Login 'session' if no messages received
         in predefined interval (10mins default)
         """
         if interval > -1:

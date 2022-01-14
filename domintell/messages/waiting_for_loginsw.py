@@ -5,7 +5,7 @@ Session opened  Message
 import json
 import domintell
 
-class SessionClosedMessage(domintell.Message):
+class WaitingForLoginswMessage(domintell.Message):
     """
     Session opened message
     """
@@ -13,8 +13,12 @@ class SessionClosedMessage(domintell.Message):
     def __init__(self, moduleType=None, data=None):
 
         domintell.Message.__init__(self)
-       
-        self.moduleType = 'SESSION_CLOSED'
+        self.moduleType = 'Waiting for LOGINPSW'
+        self.nounce = ''
+        
+        if data[2].split("=")[0] == "NONCE":
+            self.nounce = data[2].split("=")[1]
+        
         self._message = data
     
     def populate(self, serialNumber, dataType, dataString):

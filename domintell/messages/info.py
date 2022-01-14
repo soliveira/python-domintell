@@ -15,10 +15,8 @@ class InfoMessage(domintell.Message):
         domintell.Message.__init__(self)
 
         self._message = ''
-
-        if (moduleType == 'INF' and data[0:5] == 'INFO:') or moduleType == '!! ' or (moduleType == 'APP' and data[0:7] == 'APPINFO'):
-            self.moduleType = 'INFO'
-            self._message = data
+        self.moduleType = 'INFO'
+        self._message = data
     
     def populate(self, serialNumber, dataType, dataString):
         pass

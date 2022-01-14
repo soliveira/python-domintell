@@ -6,8 +6,8 @@ Port to Domintell
 """
 import os
 
-MINIMUM_MESSAGE_SIZE = 10
-MAXIMUM_MESSAGE_SIZE = MINIMUM_MESSAGE_SIZE + 100
+MINIMUM_MESSAGE_SIZE = 3
+MAXIMUM_MESSAGE_SIZE = MINIMUM_MESSAGE_SIZE + 200
 
 # pylint: disable-msg=C0103
 CommandRegistry = {}
@@ -61,7 +61,8 @@ from domintell.module import Module
 from domintell.modules import *
 
 from domintell.parser import DomintellParser, ParserError
-from domintell.controller import Controller, DomintellConnection
+from domintell.controller import Controller
+from domintell.connections import DomintellConnection
 
 if not on_app_engine():
     try:
