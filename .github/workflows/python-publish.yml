@@ -7,11 +7,11 @@
 # documentation.
 
 name: Upload Python Package
-
+runs-on: self-hosted
 on:
   release:
     types: [published]
-
+    
 jobs:
   deploy:
 
