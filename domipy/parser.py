@@ -22,7 +22,6 @@ class ParserError(Exception):
     """
     Error when invalid message is received
     """
-    pass
 
 class DomintellParser(object):
     """
@@ -42,7 +41,7 @@ class DomintellParser(object):
 
     def parse(self, data):
         """
-        parse message and return Message object, or None        
+        parse message and return Message object, or None
         """
         data = data.lstrip('\r\n ').rstrip('\r\n')
         assert len(data) > 0
@@ -53,10 +52,8 @@ class DomintellParser(object):
             self.logger.warning("Domintell message are maximum %s chars, this one is %s", str(
                 domipy.MAXIMUM_MESSAGE_SIZE), str(len(data)))
             return
-        
         ## Real parsing here
-      
-         
+
         message_components = data.split(':')
         message_type = message_components[0]
 
@@ -113,7 +110,7 @@ class DomintellParser(object):
                 return message
             else:
                 self.logger.debug("Unrecognized message [%s]", str(module_type))
-#'INFO:REQUESTSALT:USERNAME=casa:NONCE=4849562941642150400:SALT=80100956:INFO\r\n'
+
     def parse_info(self, message_components):
         if message_components[1] == MSG_SESSION_OPENED:
             return domipy.SessionOpenedMessage(data=message_components[1])
@@ -129,11 +126,11 @@ class DomintellParser(object):
             return domipy.InfoMessage(data=message_components[1])
         return domipy.InfoMessage("INFO", message_components[1])
 
-    def contains_all(self, str, set):
-        return 0 not in [c in str for c in set]
-    
-    def contains_any(self, str, set):
-        return 1 in [c in str for c in set]
+    def contains_all(self, current_string, current_set):
+        return 0 not in [c in current_string for c in current_set]
+
+    def contains_any(self, current_string, current_set):
+        return 1 in [c in current_string for c in current_set]
 
     
 

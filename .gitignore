@@ -1,9 +1,11 @@
 *.pyc
 credentials.py
+test.py
 build
 dist
 python_domintell.egg-info
 site-packages
 modules.js
 modules.pkl
+domipy.egg-info/*
 .vscode

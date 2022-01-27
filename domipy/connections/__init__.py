@@ -33,7 +33,7 @@ class DomintellException(Exception):
     def __str__(self):
         return repr(self.value)
 
-class DomintellConnection(object):
+class DomintellConnection():
     """
     Generic Domintell connection
     """
@@ -57,15 +57,14 @@ class WSSConnection(DomintellConnection):
     """
         Wrapper for Secure Web Socket connection configuration
     """
-    def __init__(self, device, controller=None, ping_interval=0):
+    def __init__(self, device, controller=None, hello_interval=0):
         DomintellConnection.__init__(self)
         self.logger = logging.getLogger('domintell')
         self._device = device
         self.controller = controller
-        self.ping_interval = ping_interval 
+        self.hello_interval = hello_interval
 
         try:
-            websocket.enableTrace(True)
             self._socket =websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
             self._socket.connect(device)
 
@@ -87,9 +86,9 @@ class WSSConnection(DomintellConnection):
         self._write_process.start()
 
         # build a ping thread
-        self._ping_process = threading.Thread(None, self.ping_daemon,
+        self._hello_process = threading.Thread(None, self.hello_daemon,
                                             "domintell-ping-writer", (), {})
-        self._ping_process.daemon = True
+        self._hello_process.daemon = True
 
     def stop(self):
         """Close socket."""
@@ -103,7 +102,10 @@ class WSSConnection(DomintellConnection):
 
     def feed_parser(self, data):
         """Parse received message."""
-        self.controller.feed_parser(data)
+        lines = data.splitlines()
+
+        for line in lines:
+            self.controller.feed_parser(line)
 
     def send(self, message, callback=None):
         """Add message to write queue."""
@@ -130,22 +132,22 @@ class WSSConnection(DomintellConnection):
             if callback:
                 callback()
 
-    def ping_daemon(self):
-        """Put ping message into write thread every ping_interval sec"""
+    def hello_daemon(self):
+        """Put hello message into write thread every hello_interval sec"""
         while True:
             ping_message = domipy.messages.Hello()
             self.send(ping_message)
-            time.sleep(self.ping_interval)
+            time.sleep(self.hello_interval)
 
-    def start_ping(self, interval=-1):
+    def start_hello(self, interval=-1):
         """
-        Start sending PING message to DETH02 every minute.
-        DETH02 will end Login 'session' if no messages received
+        Start sending HELLO message to server every minute.
+        Server will end Login 'session' if no messages received
         in predefined interval (10mins default)
         """
         if interval > -1:
-            self.ping_interval = interval
+            self.hello_interval = interval
 
-        if self.ping_interval > 0:
-            if not self._ping_process.is_alive():
-                self._ping_process.start()
+        if self.hello_interval > 0:
+            if not self._hello_process.is_alive():
+                self._hello_process.start()

@@ -7,7 +7,7 @@ Port to Domintell
 import os
 
 MINIMUM_MESSAGE_SIZE = 3
-MAXIMUM_MESSAGE_SIZE = MINIMUM_MESSAGE_SIZE + 200
+MAXIMUM_MESSAGE_SIZE = MINIMUM_MESSAGE_SIZE + 5000
 
 # pylint: disable-msg=C0103
 CommandRegistry = {}

@@ -10,9 +10,8 @@ import domipy
 from domipy.connections import WSSConnection
 from domipy.messages.login_request import LoginRequest
 from domipy.utils import ModuleJSONEncoder
- 
+
 MODULE_CATEGORIES = {
-    # todo: fix modules
     'switch': ['VMB4RYLD', 'VMB4RYNO'],
     'sensor': ['VMB6IN', 'VMB7IN']
 }
@@ -26,7 +25,7 @@ class Controller(object):
         self.logger = logging.getLogger('domintell')
         self.parser = domipy.DomintellParser(self)
         self.__subscribers = []
-        self.__scan_callback = None
+        self._password = ''
         self._modules = {}
         self.connection = WSSConnection(address, self)
 
@@ -74,19 +73,11 @@ class Controller(object):
                 result.append(module)
         return result
 
-    def scan(self, callback=None):
+    def scan(self):
         """
         Scan the bus discovered modules will com to reader thread
         :return: None
-        """
-        # def scan_finished():
-        #     """
-        #     Callback when scan is finished
-        #     """
-        #     time.sleep(3)
-        #     logging.info('Scan finished')
-        #     callback()
-        
+        """        
         message = domipy.AppInfoRequest()
         self.send(message)
 
@@ -94,12 +85,12 @@ class Controller(object):
         self._password = password
         message = domipy.LoginRequestSaltCommand(username)
         self.send(message)
-         
+
     def new_message(self, message):
         """
         :return: None
         """
-        self.logger.debug("New message: [" + str(message) + "]")
+        self.logger.debug("New message: [%s]",str(message))
         if isinstance(message, domipy.ModuleInfoMessage):
             # do something with module data here
             self.logger.info("Domintell module info message received")
@@ -165,4 +156,4 @@ class Controller(object):
             :param self: 
             :param ping_interval: 
         """
-        self.connection.start_ping(ping_interval)
+        self.connection.start_hello(ping_interval)

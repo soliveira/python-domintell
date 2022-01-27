@@ -3,12 +3,14 @@
 Example code to scan Domintell and return list of installed modules.
 """
 
+import asyncio
 import time
 import logging
 import sys
-import domipy
 import os, sys
 from config import host
+import domipy
+
 
 def _on_message(message):
     print('received message', message)
@@ -20,7 +22,8 @@ please create a simple credentials.py:
 
 host = {
     'ADDRESS': '192.168.0.1:17481',
-    'SECRET': '<your password hash>'
+    'USERNAME': '<your username>'
+    'PASSWORD': '<your password>'
 }
 
 """
@@ -28,11 +31,11 @@ host = {
 #pylint: disable-msg=C0103
 logging.info('Configuring controller for {}'.format(host['ADDRESS']))
 
-controller = domipy.Controller(host['ADDRESS']) 
+controller = domipy.Controller(host['ADDRESS'])
 controller.subscribe(_on_message)
 
 logging.info('LOGIN')
-controller.login(host['SECRET'])
+controller.login(host['USERNAME'], host['PASSWORD'])
 
 time.sleep(10)
 logging.info('Starting scan')
@@ -40,6 +43,8 @@ logging.info('Starting scan')
 controller.scan(None)
 
 logging.info('Starting sleep')
-time.sleep(1000)
+
+input("Press enter to exit ")
+
 logging.info('Exiting ...')
 controller.stop()

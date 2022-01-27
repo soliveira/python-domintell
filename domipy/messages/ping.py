@@ -12,4 +12,4 @@ class Ping(domipy.Command):
         domipy.Command.__init__(self)
 
     def command(self):
-        return "&PING"
+        return "PING"
