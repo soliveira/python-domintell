@@ -120,13 +120,22 @@ class DVARModule(GenericDISM0xModule):
     """
     COMMAND_CODE = 'VAR'
 
+    def switch_val(self):
+        self._controller.send(domipy.SwitchValueMessage(self.COMMAND_CODE, self._serial_number))
+
     def number_of_channels(self):
         return 1
 
+    def turn_on(self):
+        self.switch_val()
+    
+    def turn_off(self):
+        self.switch_val()
+    
     def _on_message(self, message):
         if isinstance(message, domipy.VARStatusMessage):
             self._values = message.get_values()
-            
+
             for ch in range(0, self.number_of_channels()):
                 if ch in self._callbacks:
                     for callback in self._callbacks[ch]:

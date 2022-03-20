@@ -68,3 +68,5 @@ from domipy.messages.temperature_status import TE1TemperaturetatusMessage
 from domipy.messages.temperature_status import TE2TemperaturetatusMessage
 from domipy.messages.var_status import VARStatusMessage
 from domipy.messages.var_status import SYSStatusMessage
+from domipy.messages.set_var import SwitchValueMessage
+from domipy.messages.user_disconnected import UserDisconnected

@@ -8,6 +8,7 @@ DOM_ABSENSE = 1
 DOM_AUTO = 2
 DOM_COMFORT = 5
 DOM_FROST = 6
+DOM_HEATING = 7
 
 
 class DTEM01Module(domipy.Module):
@@ -90,6 +91,8 @@ class DTEM01Module(domipy.Module):
             return DOM_COMFORT
         elif mode == 'FROST':
             return DOM_FROST
+        elif mode == 'HEATING':
+            return DOM_HEATING
         return DOM_AUTO
 
 class DTEM02Module(domipy.Module):

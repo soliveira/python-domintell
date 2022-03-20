@@ -28,7 +28,7 @@ class GenericVARStatusMessage(GenericDIStatusMessage):
         # we can not identify variable by serialNumber,
         # so we prepend moduleType/command_code in the front
         if dataType == "O":
-            self.populateA(self.moduleType + serialNumber, dataType, dataString)
+            self.populateA(serialNumber, dataType, dataString)
         elif dataType == "D":
             self.populateD(self.moduleType + serialNumber, dataType, dataString)
 

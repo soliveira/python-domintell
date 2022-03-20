@@ -59,7 +59,7 @@ class DomintellParser(object):
 
         if message_type == MSG_INFO_WRAPPER:
             return self.parse_info(message_components)
-
+            
         module_type = data[0:3]
         serial_number = data[3:9].strip()
         data_type = data[9:10]
@@ -84,7 +84,9 @@ class DomintellParser(object):
             if data[0:11] == "END APPINFO":
                 self._mode = NORMAL_MODE
                 return domipy.ControllMessage('END APPINFO', data)
-
+        if message_components[0] == 'ERROR':
+            if message_components[1] == 'User database empty. Connect first with GoldenGate':
+                return domipy.UserDisconnected()
         
         if self._mode == APP_INFO_MODE:
             # we are in app info mode, regular messages won't be processed
