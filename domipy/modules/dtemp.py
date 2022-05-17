@@ -8,12 +8,16 @@ DOM_ABSENSE = 1
 DOM_AUTO = 2
 DOM_COMFORT = 5
 DOM_FROST = 6
-DOM_HEATING = 7
+
+DOM_REG_MODE_OFF = 0
+DOM_REG_MODE_HEATING = 1
+DOM_REG_MODE_COOLING = 2
+DOM_REG_MODE_MIXED = 3
 
 
 class DTEM01Module(domipy.Module):
     """
-    DTEM01 - temperature controll module (1 channels)    
+    DTEM01 - temperature controll module (1 channels)
     """
     COMMAND_CODE = 'TE1'
 
@@ -23,6 +27,7 @@ class DTEM01Module(domipy.Module):
         self._mode = None
         self._set_point = None
         self._range = None
+        self._regulation_mode = None
 
     def get_range(self):
         return self._range
@@ -36,19 +41,26 @@ class DTEM01Module(domipy.Module):
     def get_set_point(self):
         return self._set_point
 
+    def get_regulation_mode(self):
+        return self._regulation_mode
+        
     def set_temperature(self, temperature):
         message = domipy.SetTemperatureMessage(self.get_module_code(), self.get_serial_number(), temperature)
         self._controller.send(message)
     
     def set_mode(self, mode):
         """ Set temperature controll mode, modes:
-        1 - Absense
-        2 - AUTOMATIC
-        5 - Comfort
-        6 - Frost (if enabled in controller)
+        0 - off
+        1 - heating
+        2 - cooling
+        3 - mixed
         """
         message = domipy.SetTemperatureModeMessage(self.get_module_code(), self.get_serial_number(), mode)
-        self._controller.send(message) 
+        self._controller.send(message)
+
+    def set_regulation_mode(self, mode):
+        message = domipy.SetRegulationModeMessage(self.get_module_code(), self.get_serial_number(), mode)
+        self._controller.send(message)
     
     def set_automatic(self):
         message = domipy.SetTemperatureAutomaticMessage(self.get_module_code(), self.get_serial_number())
@@ -74,6 +86,7 @@ class DTEM01Module(domipy.Module):
             self._temperature = message.get_temperature()
             self._set_point = message.get_set_point()
             self._mode = self._mode_text_to_number(message.get_mode())
+            self._regulation_mode = self._regulation_mode_text_to_number(message.get_regulation_mode())
             print("mode", self._mode)
             self._range = message.get_range()
 
@@ -91,10 +104,18 @@ class DTEM01Module(domipy.Module):
             return DOM_COMFORT
         elif mode == 'FROST':
             return DOM_FROST
-        elif mode == 'HEATING':
-            return DOM_HEATING
         return DOM_AUTO
 
+    def _regulation_mode_text_to_number(self, regulation_mode):
+        if regulation_mode == 'COOLING':
+            return DOM_REG_MODE_COOLING
+        elif regulation_mode == 'HEATING':
+            return DOM_REG_MODE_HEATING
+        elif regulation_mode == 'MIXED':
+            return DOM_REG_MODE_MIXED
+        elif regulation_mode == 'OFF':
+            return DOM_REG_MODE_OFF
+        
 class DTEM02Module(domipy.Module):
     """
     DTEM02 -  controll module (1 channels)    

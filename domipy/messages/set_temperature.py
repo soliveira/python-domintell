@@ -56,3 +56,22 @@ class SetTemperatureSetPointMessage(domipy.Command):
     """
     def __init__(self, moduleType, serialNumber, value):
         domipy.Command.__init__(self, moduleType, serialNumber.strip(), -1, "%T", value)
+
+class SetCoolingTemperatureSetPointMessage(domipy.Command):
+    """
+    Set temperature
+    """
+    def __init__(self, moduleType, serialNumber, value):
+        domipy.Command.__init__(self, moduleType, serialNumber.strip(), -1, "%U", value)
+
+
+class SetRegulationModeMessage(domipy.Command):
+    """
+    Set temperature mode
+    1 - Absense
+    2 - Automatic
+    5 - COmfort
+    6 - Frost
+    """
+    def __init__(self, moduleType, serialNumber, value):
+        domipy.Command.__init__(self, moduleType, serialNumber.strip(), -1,  "%R", value)

@@ -4,11 +4,13 @@ Temperature status
 """
 import json
 import domipy
-from domipy.utils import DecimalEncoder
 
 TEM_COMMAND_CODE = "TEM"
 TE1_COMMAND_CODE = "TE1"
 TE2_COMMAND_CODE = "TE2"
+COOLING_MESSAGE_DATA_TYPE = 'T'
+HEATING_MESSAGE_DATA_TYPE = 'U'
+
 
 class GenericTemperaturetatusMessage(domipy.Message):
     """
@@ -22,7 +24,9 @@ class GenericTemperaturetatusMessage(domipy.Message):
         self.dataType = None
         self._current = None
         self._mode = None
-        self._set_point = None
+        self._regulation_mode = None
+        self._cooling_set_point = None
+        self._heating_set_point = None
         self._range = None
 
     def get_temperature(self):
@@ -31,8 +35,14 @@ class GenericTemperaturetatusMessage(domipy.Message):
     def get_mode(self):
         return self._mode
 
+    def get_regulation_mode(self):
+        return self._regulation_mode
+
     def get_set_point(self):
-        return self._set_point
+        if self.dataType == COOLING_MESSAGE_DATA_TYPE :
+            return self._cooling_set_point
+        else :
+            return self._heating_set_point
     
     def get_range(self):
         return self._range
@@ -45,23 +55,32 @@ class GenericTemperaturetatusMessage(domipy.Message):
 
         self.serialNumber = serialNumber
         self.dataType = dataType
-
+        # [T20.2 21.0 AUTO 21.0]
+        # [U20.2 21.0 HEATING 21.0]
         data = dataString.split()
-
+        
         self._current = float(data[0])
-        self._set_point = float(data[1])
-        self._mode = data[2]
+
+        if dataType == COOLING_MESSAGE_DATA_TYPE :
+            self._cooling_set_point = float(data[1])
+            self._mode = data[2]
+        else :
+            self._heating_set_point = float(data[1])
+            self._regulation_mode = data[2]
+
         self._range = float(data[3])
 
     def to_json(self):
         """
         :return: str
         """
-        # FIXME
+
         json_dict = self.to_json_basic()
         json_dict['current'] = self._current
         json_dict['mode'] = self._mode
-        json_dict['set_point'] = self._set_point
+        json_dict['regulation_mode'] = self._regulation_mode
+        json_dict['cooling_set_point'] = self._cooling_set_point
+        json_dict['heating_set_point'] = self._heating_set_point
         json_dict['range'] = self._range
         return json.dumps(json_dict)
 

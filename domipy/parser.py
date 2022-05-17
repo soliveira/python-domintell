@@ -53,7 +53,7 @@ class DomintellParser(object):
                 domipy.MAXIMUM_MESSAGE_SIZE), str(len(data)))
             return
         ## Real parsing here
-
+        #TE1   E73U20.2 21.0 HEATING 21.0
         message_components = data.split(':')
         message_type = message_components[0]
 

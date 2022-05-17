@@ -63,15 +63,9 @@ class WSSConnection(DomintellConnection):
         self._device = device
         self.controller = controller
         self.hello_interval = hello_interval
+        self._device = device
 
-        try:
-            self._socket =websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
-            self._socket.connect(device)
-
-        except Exception as ex:
-            self.logger.error("Could not open socket, \
-                              no messages are read or written to the bus")
-            raise DomintellException("Could not open socket port") from ex
+        self.connect_socket()
         # build a read thread
         self._listen_process = threading.Thread(None, self.read_daemon,
                                          "domintell-process-reader", (), {})
@@ -89,6 +83,16 @@ class WSSConnection(DomintellConnection):
         self._hello_process = threading.Thread(None, self.hello_daemon,
                                             "domintell-ping-writer", (), {})
         self._hello_process.daemon = True
+
+    def connect_socket(self):
+        try:
+            self._socket = websocket.WebSocket(sslopt={"cert_reqs": ssl.CERT_NONE})
+            self._socket.connect(self._device)
+
+        except Exception as ex:
+            self.logger.error("Could not open socket, \
+                              no messages are read or written to the bus")
+            raise DomintellException("Could not open socket port") from ex
 
     def stop(self):
         """Close socket."""
@@ -115,8 +119,11 @@ class WSSConnection(DomintellConnection):
     def read_daemon(self):
         """Reads incoming data."""
         while True:
-            data = self._socket.recv()
-            self.feed_parser(data)
+            try:
+                data = self._socket.recv()
+                self.feed_parser(data)
+            except websocket.WebSocketConnectionClosedException :
+                self.connect_socket() 
 
     def write_daemon(self):
         """Write thread."""
@@ -124,11 +131,15 @@ class WSSConnection(DomintellConnection):
             (message, callback) = self._write_queue.get(block=True)
             self.logger.info("Sending message to socket: %s", str(message))
             self.logger.debug("Sending controll message:  %s", message.to_string())
-            if message.is_binary():
-                self._socket.send(message.to_string())
-            else:
-                self._socket.send(bytes(message.to_string(),'ascii'))
-            time.sleep(1)
+            try:
+                if message.is_binary():
+                    self._socket.send(message.to_string())
+                else:
+                    self._socket.send(bytes(message.to_string(),'ascii'))
+            except websocket.WebSocketConnectionClosedException :
+                self.connect_socket()
+
+            time.sleep(0.3)
             if callback:
                 callback()
 

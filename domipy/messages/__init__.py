@@ -60,10 +60,13 @@ from domipy.messages.set_do import SetDigitalOutputStopMessage
 from domipy.messages.set_temperature import SetTemperatureMessage
 from domipy.messages.set_temperature import SetTemperatureModeMessage
 from domipy.messages.set_temperature import SetTemperatureSetPointMessage
+from domipy.messages.set_temperature import SetCoolingTemperatureSetPointMessage
 from domipy.messages.set_temperature import SetTemperatureComfortMessage
 from domipy.messages.set_temperature import SetTemperatureAutomaticMessage
 from domipy.messages.set_temperature import SetTemperatureAbsenceMessage
 from domipy.messages.set_temperature import SetTemperatureFrostMessage
+from domipy.messages.set_temperature import SetRegulationModeMessage
+
 from domipy.messages.temperature_status import TE1TemperaturetatusMessage
 from domipy.messages.temperature_status import TE2TemperaturetatusMessage
 from domipy.messages.var_status import VARStatusMessage
